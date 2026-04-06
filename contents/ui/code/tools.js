@@ -36,8 +36,8 @@ function createFavoriteActions(i18n, favoriteModel, favoriteId) {
     }
 
 
-    if (favoriteModel.activities === undefined ||
-        favoriteModel.activities.runningActivities.length <= 1) {
+    if (favoriteModel.activities === undefined || !favoriteModel.activities.hasOwnProperty("runningActivities")
+        || favoriteModel.activities.runningActivities.length <= 1) {
         var action = {};
 
         if (favoriteModel.isFavorite(favoriteId)) {
