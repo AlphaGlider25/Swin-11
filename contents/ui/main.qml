@@ -42,6 +42,7 @@ PlasmoidItem {
     fullRepresentation: compactRepresentation
 
     property Item dragSource: null
+    property string searchRunnerFilter: "all"
 
     function action_menuedit() {
         processRunner.runMenuEditor();
@@ -76,7 +77,7 @@ PlasmoidItem {
         appletInterface: kicker
         showAllApps: true
         showRecentApps: true
-        showRecentDocs: true
+        showRecentDocs: Plasmoid.configuration.showRecentDocs
         showPowerSession: false
 
         onShowRecentAppsChanged: {
@@ -120,6 +121,20 @@ PlasmoidItem {
         }
     }
 
+    Kicker.RootModel {
+        id: categoryRootModel
+
+        autoPopulate: false
+        appNameFormat: 0
+        flat: false
+        sorted: true
+        showSeparators: false
+        showAllApps: false
+        showRecentApps: false
+        showRecentDocs: false
+        showPowerSession: false
+    }
+
     Connections {
         target: Plasmoid.configuration
 
@@ -132,7 +147,8 @@ PlasmoidItem {
         }
 
         function onHiddenApplicationsChanged(){
-            rootModel.refresh(); // Force refresh on hidden
+            rootModel.refresh();
+            categoryRootModel.refresh();
         }
     }
 
@@ -144,17 +160,25 @@ PlasmoidItem {
          favoritesModel: globalFavorites
 
          runners: {
+             if (kicker.searchRunnerFilter === "apps")
+                 return ["krunner_services"];
+             if (kicker.searchRunnerFilter === "files")
+                 return ["baloosearch", "bookmarks"];
+             if (kicker.searchRunnerFilter === "settings")
+                 return ["krunner_systemsettings"];
+             if (kicker.searchRunnerFilter === "actions")
+                 return ["krunner_sessions", "krunner_powerdevil", "calculator", "unitconverter"];
+
              const results = ["krunner_services",
                               "krunner_systemsettings",
                               "krunner_sessions",
                               "krunner_powerdevil",
                               "calculator",
                               "unitconverter"];
-
-             if (Plasmoid.configuration.useExtraRunners) {
+             if (Plasmoid.configuration.enableShellRunner)
+                 results.push("krunner_shell");
+             if (Plasmoid.configuration.useExtraRunners)
                  results.push(...Plasmoid.configuration.extraRunners);
-             }
-
              return results;
          }
      }

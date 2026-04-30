@@ -24,6 +24,13 @@ RowLayout{
 
     spacing: Kirigami.Units.largeSpacing
 
+    signal tabOut
+
+    Keys.onTabPressed: event => {
+        event.accepted = true;
+        tabOut();
+    }
+
     KCoreAddons.KUser {   id: kuser  }
     //Logic {   id: logic }
 
@@ -31,39 +38,47 @@ RowLayout{
         id: sessionManager
     }
 
-    RowLayout{
-        MouseArea {
-                cursorShape: Qt.PointingHandCursor
-                anchors.fill: parent
-                onClicked: Qt.openUrlExternally("file:///usr/share/applications/kcm_users.desktop")
-        }
-        Image {
-            id: iconUser
-            source: {
-                var faceUrl = kuser.faceIconUrl.toString()
-                if (faceUrl !== "") {
-                    return faceUrl
+    Item {
+        implicitWidth: userInfoRow.implicitWidth
+        implicitHeight: userInfoRow.implicitHeight
+        Layout.alignment: Qt.AlignVCenter
+
+        RowLayout {
+            id: userInfoRow
+            anchors.fill: parent
+
+            Image {
+                id: iconUser
+                source: {
+                    var faceUrl = kuser.faceIconUrl.toString()
+                    if (faceUrl !== "") {
+                        return faceUrl
+                    }
+                    return "file://usr/share/icons/breeze/apps/48/kuser.svg"
                 }
-                // Use proper icon path or theme icon
-                return "file://usr/share/icons/breeze/apps/48/kuser.svg"
+                cache: false
+                visible: source !== ""
+                sourceSize.height: parent.height * 0.7
+                sourceSize.width: parent.height * 0.7
+                fillMode: Image.PreserveAspectFit
+                Layout.alignment: Qt.AlignVCenter
+                layer.enabled: true
             }
-            cache: false
-            visible: source !== ""
-            sourceSize.height: parent.height * 0.7
-            sourceSize.width: parent.height * 0.7
-            fillMode: Image.PreserveAspectFit
-            Layout.alignment: Qt.AlignVCenter
-            layer.enabled: true
+
+            PlasmaExtras.Heading {
+                wrapMode: Text.NoWrap
+                color: Kirigami.Theme.textColor
+                level: 3
+                font.bold: true
+                text: qsTr(kuser.fullName)
+            }
         }
 
-        PlasmaExtras.Heading {
-            wrapMode: Text.NoWrap
-            color: Kirigami.Theme.textColor
-            level: 3
-            font.bold: true
-            //font.weight: Font.Bold
-            text: qsTr(kuser.fullName)
-        }   
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: Qt.openUrlExternally("file:///usr/share/applications/kcm_users.desktop")
+        }
     }
 
 
@@ -128,7 +143,7 @@ RowLayout{
             MouseArea {
                 cursorShape: Qt.PointingHandCursor
                 anchors.fill: parent
-                onClicked: sessionManager.suspend() 
+                onClicked: sessionManager.suspend()
                 }
         icon.width: 24
         icon.height: 24
@@ -138,6 +153,7 @@ RowLayout{
         PlasmaComponents3.ToolTip.timeout: 1000
         PlasmaComponents3.ToolTip.visible: hovered
         PlasmaComponents3.ToolTip.text: i18n("Sleep")
+        visible: sessionManager.canSuspend && Plasmoid.configuration.showSleepButton
     }
 
     PlasmaComponents3.ToolButton {
@@ -154,6 +170,7 @@ RowLayout{
         PlasmaComponents3.ToolTip.timeout: 1000
         PlasmaComponents3.ToolTip.visible: hovered
         PlasmaComponents3.ToolTip.text: i18n("Restart")
+        visible: sessionManager.canReboot && Plasmoid.configuration.showRestartButton
     }
     PlasmaComponents3.ToolButton {
             MouseArea {
@@ -169,6 +186,7 @@ RowLayout{
         PlasmaComponents3.ToolTip.timeout: 1000
         PlasmaComponents3.ToolTip.visible: hovered
         PlasmaComponents3.ToolTip.text: i18n("Shutdown")
+        visible: sessionManager.canShutdown && Plasmoid.configuration.showShutdownButton
     }
 
     

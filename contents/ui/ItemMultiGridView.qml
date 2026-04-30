@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 */
 
 import QtQuick
+import QtQuick.Layouts
 
 import org.kde.ksvg 1.0 as KSvg
 import org.kde.plasma.components as PlasmaComponents
@@ -16,16 +17,10 @@ import org.kde.plasma.plasmoid
 PlasmaComponents.ScrollView {
     id: itemMultiGrid
 
-    //anchors {
-    //    top: parent.top
-    //}
-
     width: parent.width
 
     implicitHeight: itemColumn.implicitHeight
 
-    //signal keyNavLeft(int subGridIndex)
-    //signal keyNavRight(int subGridIndex)
     signal keyNavUp
     signal keyNavDown
 
@@ -43,7 +38,7 @@ PlasmaComponents.ScrollView {
         return repeater.itemAt(index).itemGrid;
     }
 
-    function tryActivate(row, col) { // FIXME TODO: Cleanup messy algo.
+    function tryActivate(row, col) {
         if (flickable.contentY > 0) {
             row = 0;
         }
@@ -56,7 +51,7 @@ PlasmaComponents.ScrollView {
             if (grid.count > 0) {
                 if (rows <= row) {
                     target = grid;
-                    rows += grid.lastRow() + 2; // Header counts as one.
+                    rows += grid.lastRow() + 2;
                 } else {
                     break;
                 }
@@ -80,14 +75,18 @@ PlasmaComponents.ScrollView {
     Flickable {
         id: flickable
 
+        width: itemMultiGrid.availableWidth
+        height: itemMultiGrid.availableHeight
+        clip: true
+
         flickableDirection: Flickable.VerticalFlick
         contentHeight: itemColumn.implicitHeight
-        //focusPolicy: Qt.NoFocus
+        contentWidth: width
 
         Column {
             id: itemColumn
 
-            width: itemMultiGrid.width - Kirigami.Units.gridUnit
+            width: flickable.width
 
             Repeater {
                 id: repeater
@@ -95,165 +94,238 @@ PlasmaComponents.ScrollView {
                 delegate: Item {
                     id: itemTest
                     width: itemColumn.width
-                    height: gridView.height + gridViewLabel.height + Kirigami.Units.largeSpacing * 2
+                    height: visible ? sectionLayout.implicitHeight : 0
                     visible: gridView.count > 0
 
                     property Item itemGrid: gridView
+                    property bool sectionCollapsed: false
 
-                    Kirigami.Heading {
-                        id: gridViewLabel
-
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.leftMargin: Kirigami.Units.smallSpacing
-                        //height: dummyHeading.height
-                        elide: Text.ElideRight
-                        wrapMode: Text.NoWrap
-                        opacity: 0.8
-                        color: Kirigami.Theme.textColor
-                        level: 3
-                        font.bold: true
-                        font.weight: Font.DemiBold
-                        text: repeater.model.modelForRow(index).description
-                        textFormat: Text.PlainText
-                    }
-
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.left: gridViewLabel.right
-                        anchors.leftMargin: Kirigami.Units.largeSpacing
-                        anchors.rightMargin: Kirigami.Units.largeSpacing
-                        anchors.verticalCenter: gridViewLabel.verticalCenter
-                        height: 1
-                        color: Kirigami.Theme.textColor
-                        opacity: 0.15
-                    }
-
-                    MouseArea {
+                    Column {
+                        id: sectionLayout
                         width: parent.width
-                        height: parent.height
-                        onClicked: root.toggle()
-                    }
+                        spacing: 0
 
-                    ItemGridView {
-                        id: gridView
+                        // Windows 11-style category section header
+                        Item {
+                            id: sectionHeader
+                            width: parent.width
+                            height: categoryLabel.implicitHeight + Kirigami.Units.smallSpacing * 3
 
-                    Connections {
-                        target: gridView
-
-                        onKeyNavDown: {
-                            console.log("ItemMultiGridView.qml: ↓")
-
-                            if (gridView.currentIndex < gridView.count - 1) {
-                                gridView.currentIndex += 1
-                                return
+                            // Left accent line
+                            Rectangle {
+                                id: accentBar
+                                anchors.left: parent.left
+                                anchors.leftMargin: Kirigami.Units.smallSpacing
+                                anchors.verticalCenter: categoryLabel.verticalCenter
+                                width: 3
+                                height: categoryLabel.implicitHeight * 0.85
+                                radius: 2
+                                color: Kirigami.Theme.highlightColor
+                                opacity: 0.85
                             }
 
-                            // At end of grid → jump to next grid
-                            var i = index
-                            for (var j = i + 1; j < repeater.count; j++) {
-                                var next = subGridAt(j)
-                                if (next.count > 0) {
-                                    next.currentIndex = 0
-                                    next.focus = true
-                                    return
+                            // Category icon
+                            Kirigami.Icon {
+                                id: categoryIcon
+                                anchors.left: accentBar.right
+                                anchors.leftMargin: Kirigami.Units.smallSpacing * 2
+                                anchors.verticalCenter: categoryLabel.verticalCenter
+                                width: Kirigami.Units.iconSizes.smallMedium
+                                height: width
+                                source: {
+                                    if (!repeater.model) return ""
+                                    var idx = repeater.model.index(index, 0)
+                                    var icon = repeater.model.data(idx, Qt.DecorationRole)
+                                    return icon || ""
+                                }
+                                visible: source !== ""
+                            }
+
+                            // Category name
+                            Text {
+                                id: categoryLabel
+                                anchors.left: categoryIcon.visible ? categoryIcon.right : accentBar.right
+                                anchors.leftMargin: Kirigami.Units.smallSpacing * 2
+                                anchors.top: parent.top
+                                anchors.topMargin: Kirigami.Units.smallSpacing
+                                anchors.right: collapseChevron.left
+                                anchors.rightMargin: Kirigami.Units.smallSpacing
+
+                                text: {
+                                    if (!repeater.model) return ""
+                                    var idx = repeater.model.index(index, 0)
+                                    var name = repeater.model.data(idx, Qt.DisplayRole)
+                                    return name || repeater.model.modelForRow(index).description || ""
+                                }
+                                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.88
+                                font.weight: Font.DemiBold
+                                color: Kirigami.Theme.textColor
+                                opacity: 0.75
+                                elide: Text.ElideRight
+                            }
+
+                            // Collapse/expand chevron
+                            Kirigami.Icon {
+                                id: collapseChevron
+                                anchors.right: parent.right
+                                anchors.rightMargin: Kirigami.Units.smallSpacing * 2
+                                anchors.verticalCenter: categoryLabel.verticalCenter
+                                width: Kirigami.Units.iconSizes.small
+                                height: width
+                                source: itemTest.sectionCollapsed ? "arrow-right" : "arrow-down"
+                                opacity: headerHover.containsMouse ? 0.9 : 0.45
+
+                                Behavior on opacity { NumberAnimation { duration: 100 } }
+                            }
+
+                            // Subtle bottom separator line
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.leftMargin: Kirigami.Units.smallSpacing
+                                anchors.rightMargin: Kirigami.Units.smallSpacing
+                                anchors.bottom: parent.bottom
+                                height: 1
+                                color: Kirigami.Theme.textColor
+                                opacity: 0.08
+                            }
+
+                            MouseArea {
+                                id: headerHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: itemTest.sectionCollapsed = !itemTest.sectionCollapsed
+                            }
+                        }
+
+                        // Spacing between header and grid
+                        Item {
+                            width: parent.width
+                            height: Kirigami.Units.smallSpacing
+                            visible: !itemTest.sectionCollapsed
+                        }
+
+                        ItemGridView {
+                            id: gridView
+                            visible: !itemTest.sectionCollapsed
+
+                            Connections {
+                                target: gridView
+
+                                onKeyNavDown: {
+                                    if (gridView.currentIndex < gridView.count - 1) {
+                                        gridView.currentIndex += 1
+                                        return
+                                    }
+
+                                    var i = index
+                                    for (var j = i + 1; j < repeater.count; j++) {
+                                        var nextDelegate = repeater.itemAt(j)
+                                        var next = nextDelegate.itemGrid
+                                        if (next.count > 0 && !nextDelegate.sectionCollapsed) {
+                                            next.currentIndex = 0
+                                            next.focus = true
+                                            return
+                                        }
+                                    }
+                                }
+
+                                onKeyNavUp: {
+                                    if (gridView.currentIndex > 0) {
+                                        gridView.currentIndex -= 1
+                                        return
+                                    }
+
+                                    var i = index
+                                    for (var j = i - 1; j >= 0; j--) {
+                                        var prevDelegate = repeater.itemAt(j)
+                                        var prev = prevDelegate.itemGrid
+                                        if (prev.count > 0 && !prevDelegate.sectionCollapsed) {
+                                            prev.currentIndex = prev.count - 1
+                                            prev.focus = true
+                                            return
+                                        }
+                                    }
+
+                                    if (i === 0 && gridView.currentIndex === 0) {
+                                        searchField.forceActiveFocus()
+                                    }
+                                }
+                            }
+
+                            width: parent.width
+                            height: {
+                                var cols = Math.max(1, Math.floor(width / itemMultiGrid.cellWidth))
+                                return Math.ceil(count / cols) * itemMultiGrid.cellHeight
+                            }
+                            itemColumns: 2
+
+                            cellWidth: itemMultiGrid.cellWidth
+                            cellHeight: itemMultiGrid.cellHeight
+                            iconSize: root.iconSize
+
+                            verticalScrollBarPolicy: PlasmaComponents.ScrollBar.AlwaysOff
+                            bypassArrowNav: true
+                            model: repeater.model.modelForRow(index)
+
+                            onFocusChanged: {
+                                if (focus) {
+                                    itemMultiGrid.focus = true;
+                                }
+                            }
+
+                            onCountChanged: {
+                                if (itemMultiGrid.grabFocus && index == 0 && count > 0) {
+                                    currentIndex = 0;
+                                    focus = true;
+                                }
+                            }
+
+                            onCurrentItemChanged: {
+                                if (!currentItem) {
+                                    return;
+                                }
+
+                                if (index == 0 && currentRow() === 0) {
+                                    flickable.contentY = 0;
+                                    return;
+                                }
+
+                                var y = currentItem.y;
+                                y = contentItem.mapToItem(flickable.contentItem, 0, y).y;
+
+                                if (y < flickable.contentY) {
+                                    flickable.contentY = y;
+                                } else {
+                                    y += itemMultiGrid.cellHeight;
+                                    y -= flickable.contentY;
+                                    y -= itemMultiGrid.height;
+
+                                    if (y > 0) {
+                                        flickable.contentY += y;
+                                    }
                                 }
                             }
                         }
 
-                        onKeyNavUp: {
-                            console.log("ItemMultiGridView.qml: ↑")
-
-                            if (gridView.currentIndex > 0) {
-                                gridView.currentIndex -= 1
-                                return
-                            }
-                            
-                            // At start of grid → jump to previous grid
-                            var i = index
-                            for (var j = i - 1; j >= 0; j--) {
-                                var prev = subGridAt(j)
-                                if (prev.count > 0) {
-                                    prev.currentIndex = prev.count - 1
-                                    prev.focus = true
-                                    return
-                                }
-                            }
-
-                            // If first grid and first item → focus search bar
-                            if (i === 0 && gridView.currentIndex === 0) {
-                                searchField.forceActiveFocus()
-                            }
-                            
-                        }
-                    }
-
-                        anchors {
-                            top: gridViewLabel.bottom
-                            topMargin: Kirigami.Units.largeSpacing
-                        }
-
-                        width: parent.width
-                        height: count * itemMultiGrid.cellHeight
-                        itemColumns: 2 //itemMultiGrid.itemColumns
-
-                        cellWidth: itemMultiGrid.cellWidth
-                        cellHeight: itemMultiGrid.cellHeight
-                        iconSize: root.iconSize
-
-                        verticalScrollBarPolicy: PlasmaComponents.ScrollBar.AlwaysOff
-                        bypassArrowNav: true
-                        model: repeater.model.modelForRow(index)
-
-                        onFocusChanged: {
-                            if (focus) {
-                                itemMultiGrid.focus = true;
-                            }
-                        }
-
-                        onCountChanged: {
-                            if (itemMultiGrid.grabFocus && index == 0 && count > 0) {
-                                currentIndex = 0;
-                                focus = true;
-                            }
-                        }
-
-                        onCurrentItemChanged: {
-                            if (!currentItem) {
-                                return;
-                            }
-
-                            if (index == 0 && currentRow() === 0) {
-                                flickable.contentY = 0;
-                                return;
-                            }
-
-                            var y = currentItem.y;
-                            y = contentItem.mapToItem(flickable.contentItem, 0, y).y;
-
-                            if (y < flickable.contentY) {
-                                flickable.contentY = y;
-                            } else {
-                                y += itemMultiGrid.cellHeight;
-                                y -= flickable.contentY;
-                                y -= itemMultiGrid.height;
-
-                                if (y > 0) {
-                                    flickable.contentY += y;
-                                }
-                            }
+                        // Bottom gap between sections
+                        Item {
+                            width: parent.width
+                            height: itemTest.sectionCollapsed
+                                    ? Kirigami.Units.smallSpacing
+                                    : Kirigami.Units.largeSpacing * 2
                         }
                     }
                 }
             }
+        }
 
-            // HACK: Steal wheel events from the nested grid view and forward them to
-            // the ScrollView's internal WheelArea.
-            Kicker.WheelInterceptor {
-                anchors.fill: gridView
-                z: 1
-                destination: findWheelArea(itemMultiGrid)
-            }
+        Kicker.WheelInterceptor {
+            width: flickable.width
+            height: flickable.height
+            z: 1
+            destination: findWheelArea(itemMultiGrid)
         }
     }
 }
