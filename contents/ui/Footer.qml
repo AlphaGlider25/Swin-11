@@ -101,13 +101,13 @@ RowLayout{
 
     PlasmaComponents3.ToolButton {
         MouseArea {
-                cursorShape: Qt.PointingHandCursor
-                anchors.fill: parent 
-                onClicked: Qt.openUrlExternally("file:///usr/share/applications/systemsettings.desktop")
-                }
+            cursorShape: Qt.PointingHandCursor
+            anchors.fill: parent
+            onClicked: executable.exec("systemsettings")
+        }
         icon.width: 24
         icon.height: 24
-        icon.name:  "configure"
+        icon.name: "configure"
         Layout.leftMargin: 10
         PlasmaComponents3.ToolTip.delay: 1000
         PlasmaComponents3.ToolTip.timeout: 1000
