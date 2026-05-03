@@ -56,6 +56,15 @@ KCM.SimpleKCM {
     property alias cfg_appsIconSize: appsIconSize.currentIndex
     property alias cfg_docsIconSize: docsIconSize.currentIndex
     property alias cfg_displayPosition: displayPosition.currentIndex
+    property alias cfg_allAppsViewMode: allAppsViewMode.currentIndex
+    property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
+    property alias cfg_showRecentDocs: showRecentDocsCb.checked
+    property alias cfg_showRecentApps: showRecentAppsCb.checked
+    property alias cfg_enableShellRunner: enableShellRunnerCb.checked
+    property alias cfg_showQuickActions: showQuickActionsCb.checked
+    property alias cfg_showSleepButton: showSleepCb.checked
+    property alias cfg_showRestartButton: showRestartCb.checked
+    property alias cfg_showShutdownButton: showShutdownCb.checked
 
     Kirigami.FormLayout {
         anchors.left: parent.left
@@ -194,7 +203,7 @@ KCM.SimpleKCM {
         CheckBox {
             id: labels2lines
             text: i18n("Show labels in two lines")
-            visible: false // TODO
+            visible: true
         }
 
         SpinBox{
@@ -211,6 +220,73 @@ KCM.SimpleKCM {
             from: 1
             to: 15
             Kirigami.FormData.label: i18n("Number of rows")
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("All Apps")
+        }
+
+        CheckBox {
+            id: showRecentDocsCb
+            Kirigami.FormData.label: i18n("Recent Documents:")
+            text: i18n("Show Recent Documents section")
+        }
+
+        ComboBox {
+            id: allAppsViewMode
+            Kirigami.FormData.label: i18n("Default view mode:")
+            Layout.fillWidth: true
+            model: [i18n("List"), i18n("Grid"), i18n("Category")]
+        }
+
+        ComboBox {
+            id: allAppsSortMode
+            Kirigami.FormData.label: i18n("Default sort order:")
+            Layout.fillWidth: true
+            model: [i18n("A → Z"), i18n("Z → A"), i18n("Newest"), i18n("Oldest"), i18n("By type")]
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Search")
+        }
+
+        CheckBox {
+            id: showRecentAppsCb
+            Kirigami.FormData.label: i18n("Home page:")
+            text: i18n("Show recently opened apps")
+        }
+
+        CheckBox {
+            id: enableShellRunnerCb
+            text: i18n("Enable shell command runner ( > cmd )")
+        }
+
+        CheckBox {
+            id: showQuickActionsCb
+            text: i18n("Show Quick Actions bar (Screenshot, Lock, Terminal…)")
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Footer power buttons")
+        }
+
+        CheckBox {
+            id: showSleepCb
+            Kirigami.FormData.label: i18n("Show:")
+            text: i18n("Sleep / Suspend")
+        }
+
+        CheckBox {
+            id: showRestartCb
+            text: i18n("Restart")
+        }
+
+        CheckBox {
+            id: showShutdownCb
+            text: i18n("Shutdown")
         }
 
         RowLayout{

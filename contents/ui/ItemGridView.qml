@@ -21,10 +21,13 @@ FocusScope {
     signal keyNavDown
 
     signal itemActivated(int index, string actionId, string argument)
+    signal folderEditRequested(int index)
 
+    property bool _folderEditPressed: false
     property bool dragEnabled: true
     property bool dropEnabled: false
     property bool showLabels: true
+    property bool labels2lines: false
     property int itemColumns
 
     property alias currentIndex: gridView.currentIndex
@@ -36,6 +39,9 @@ FocusScope {
     property alias cellWidth: gridView.cellWidth
     property alias cellHeight: gridView.cellHeight
     property int iconSize
+
+    property alias contentY: gridView.contentY
+    property alias contentHeight: gridView.contentHeight
 
     property var horizontalScrollBarPolicy: PlasmaComponents.ScrollBar.AlwaysOff
     property var verticalScrollBarPolicy: PlasmaComponents.ScrollBar.AlwaysOff
@@ -92,6 +98,10 @@ FocusScope {
         gridView.forceLayout();
     }
 
+    function positionAtIndex(idx) {
+        gridView.positionViewAtIndex(idx, GridView.Beginning);
+    }
+
     ActionMenu {
         id: actionMenu
 
@@ -108,6 +118,19 @@ FocusScope {
         //anchors.fill: parent
 
         onPositionChanged: event => {
+                               if (kicker.dragSource) {
+                                   var ez = 52
+                                   if (event.y < ez) {
+                                       dragScrollTimer.direction = -1
+                                       if (!dragScrollTimer.running) dragScrollTimer.start()
+                                   } else if (event.y > height - ez) {
+                                       dragScrollTimer.direction = 1
+                                       if (!dragScrollTimer.running) dragScrollTimer.start()
+                                   } else {
+                                       dragScrollTimer.stop()
+                                       dragScrollTimer.direction = 0
+                                   }
+                               }
                                if (!itemGrid.dropEnabled || gridView.animating || !kicker.dragSource) {
                                    return;
                                }
@@ -149,6 +172,8 @@ FocusScope {
 
         
         onExited: {
+            dragScrollTimer.stop()
+            dragScrollTimer.direction = 0
             if ("dropPlaceholderIndex" in itemGrid.model) {
                 itemGrid.model.dropPlaceholderIndex = -1;
                 gridView.currentIndex = -1;
@@ -173,10 +198,23 @@ FocusScope {
             }
         }
 
+        Timer {
+            id: dragScrollTimer
+            interval: 16
+            repeat: true
+            property int direction: 0
+            onTriggered: {
+                var maxY = Math.max(0, gridView.contentHeight - gridView.height)
+                if (direction === -1) gridView.contentY = Math.max(0, gridView.contentY - 8)
+                else if (direction === 1) gridView.contentY = Math.min(maxY, gridView.contentY + 8)
+            }
+        }
+
         Component{
             id: aItemGridDelegate2
             ItemGridDelegateColumns {
                 showLabel: showLabels
+                labels2lines: itemGrid.labels2lines
                 itemColumns: itemGrid.itemColumns
                 iconSize: itemGrid.iconSize
             }
@@ -185,6 +223,7 @@ FocusScope {
             id: aItemGridDelegate
             ItemGridDelegate {
                 showLabel: itemGrid.showLabels
+                labels2lines: itemGrid.labels2lines
                 itemColumns: itemGrid.itemColumns
                 iconSize: itemGrid.iconSize
             }
@@ -256,7 +295,12 @@ FocusScope {
                 boundsBehavior: Flickable.StopAtBounds
 
                 delegate: itemColumns == 1 ? aItemGridDelegate :  aItemGridDelegate2
-                highlight:  Rectangle { color: Qt.rgba(0.9, 0.9, 0.9, 0.1); radius: 6 }
+                highlight: Rectangle {
+                    color: Qt.rgba(Kirigami.Theme.highlightColor.r,
+                                   Kirigami.Theme.highlightColor.g,
+                                   Kirigami.Theme.highlightColor.b, 0.18)
+                    radius: 6
+                }
 
                 highlightFollowsCurrentItem: true
                 highlightMoveDuration: 0
@@ -278,7 +322,6 @@ FocusScope {
                 }
 
                 Keys.onLeftPressed: event => {
-                                        console.log("ItemGridView navLeft")   
                                         if (itemGrid.currentCol() !== 0) {
                                             event.accepted = true;
                                             moveCurrentIndexLeft();
@@ -289,7 +332,6 @@ FocusScope {
 
                 Keys.onRightPressed: event => {
                                         var columns = Math.floor(width / cellWidth);
-                                        console.log("ItemGridView navRight")   
                                         if (itemGrid.currentCol() !== columns - 1 && currentIndex !== count -1) {
                                             event.accepted = true;
                                             moveCurrentIndexRight();
@@ -299,29 +341,22 @@ FocusScope {
                                     }
 
                 Keys.onUpPressed: event => {
-                    
                     if (bypassArrowNav) {
-                        console.log("Bypass navup")
                         keyNavUp()
                         event.accepted = true
                     } else if (currentRow() !== 0) {
-                        console.log("navup")
-                        moveCurrentIndexUp()    
+                        moveCurrentIndexUp()
                         event.accepted = true
                     } else {
                         keyNavUp()
                     }
                 }
 
-
                 Keys.onDownPressed: event => {
-
                     if (bypassArrowNav) {
-                        console.log("Bypass navdown")
                         keyNavDown()
                         event.accepted = true
                     } else if (currentRow() < lastRow()) {
-                        console.log("navdown")
                         var columns = Math.floor(width / cellWidth)
                         var newIndex = currentIndex + columns
                         currentIndex = Math.min(newIndex, count - 1)
@@ -413,7 +448,14 @@ FocusScope {
                                    contextMenu.open(mapped.x, mapped.y);
                                }
                            } else {
-                               pressedItem = gridView.currentItem;
+                               var ci = gridView.currentItem;
+                               if (ci && ("folderEditZoneHovered" in ci) && ci.folderEditZoneHovered) {
+                                   itemGrid._folderEditPressed = true;
+                                   pressedItem = null;
+                               } else {
+                                   itemGrid._folderEditPressed = false;
+                                   pressedItem = ci;
+                               }
                            }
                        }
 
@@ -421,8 +463,25 @@ FocusScope {
                             mouse.accepted = true;
                             updatePositionProperties(mouse.x, mouse.y);
 
+                            if (itemGrid._folderEditPressed) {
+                                itemGrid._folderEditPressed = false;
+                                if (!dragHelper.dragging) {
+                                    var editCI = gridView.currentItem;
+                                    if (editCI && ("isFolderItem" in editCI) && editCI.isFolderItem) {
+                                        itemGrid.folderEditRequested(editCI.itemIndex);
+                                    }
+                                }
+                                pressX = pressY = -1;
+                                pressedItem = null;
+                                return;
+                            }
+
                             if (!dragHelper.dragging) {
                                 if (pressedItem) {
+                                    if (pressedItem.favoriteId && pressedItem.favoriteId !== "" &&
+                                        typeof rootItem !== "undefined") {
+                                        rootItem.recordLaunch(pressedItem.favoriteId);
+                                    }
                                     if ("trigger" in gridView.model) {
                                         gridView.model.trigger(pressedItem.itemIndex, "", null);
                                         root.toggle();

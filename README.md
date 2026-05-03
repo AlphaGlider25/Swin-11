@@ -19,6 +19,51 @@ Small design tweaks (moure rounded search bar, no blue underline, light gray bac
 - 0 width error on first start
 - shutdown / restart buttons
 
+## Installation
+
+### Requirements
+- KDE Plasma 6.5+
+- `cmake`, `extra-cmake-modules`, `kpackagetool6`
+
+### Method 1: Install via KDE Store (Recommended)
+Search for **Menu 11 Next** in *System Settings → Get New Widgets*.
+
+### Method 2: Manual Install from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/AlphaGlider25/Swin-11.git
+cd Swin-11
+
+# Install the widget
+kpackagetool6 --install package/ --type Plasma/Applet
+```
+
+To update an existing install:
+
+```bash
+kpackagetool6 --upgrade package/ --type Plasma/Applet
+```
+
+### Method 3: Install via plasmapkg2 (older systems)
+
+```bash
+plasmapkg2 --install package/ --type Plasma/Applet
+```
+
+### After Installing
+1. Right-click your taskbar → *Add Widgets*
+2. Search for **Menu 11 Next**
+3. Drag it onto your panel
+
+### Uninstall
+
+```bash
+kpackagetool6 --remove com.github.alphglider25.menu11next --type Plasma/Applet
+```
+
+---
+
 ## Screenshot
 ![Screenshot 1](https://eisteed.com/linux/menu-11-next/Win11-Next-Demo1.png)
 
