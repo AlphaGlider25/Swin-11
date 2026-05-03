@@ -28,25 +28,17 @@ Small design tweaks (moure rounded search bar, no blue underline, light gray bac
 ### Method 1: Install via KDE Store (Recommended)
 Search for **Menu 11 Next** in *System Settings → Get New Widgets*.
 
-### Method 2: Manual Install from Source
-
+## Method 2: install via source
 ```bash
 # Clone the repository
-git clone https://github.com/AlphaGlider25/Swin-11.git
-cd Swin-11
+git clone https://github.com/Eisteed/menu-11-next.git
+cd menu-11-next
 
 # Install the widget
 kpackagetool6 --install package/ --type Plasma/Applet
 ```
 
-To update an existing install:
-
-```bash
-kpackagetool6 --upgrade package/ --type Plasma/Applet
-```
-
 ### Method 3: Install via plasmapkg2 (older systems)
-
 ```bash
 plasmapkg2 --install package/ --type Plasma/Applet
 ```
@@ -59,12 +51,15 @@ plasmapkg2 --install package/ --type Plasma/Applet
 ### Uninstall
 
 ```bash
-kpackagetool6 --remove com.github.alphglider25.menu11next --type Plasma/Applet
+kpackagetool6 --type Plasma/Applet --remove menu.11.next
 ```
 
 ---
 
 ## Screenshot
-![Screenshot 1](https://eisteed.com/linux/menu-11-next/Win11-Next-Demo1.png)
+![Screenshot 1](<img width="613" height="730" alt="Screenshot_20260501_224736" src="https://github.com/user-attachments/assets/d23167b0-cc04-4cad-bf1d-3a11bca9a0c7" />)
 
-![Screenshot 2](https://eisteed.com/linux/menu-11-next/Win11-Next-Demo2.png)
+![Screenshot 2](<img width="611" height="728" alt="Screenshot_20260501_224717" src="https://github.com/user-attachments/assets/e92a5883-11f1-4dd7-977b-2217dcef973d" />)
+
+![Screenshot 2](<img width="605" height="721" alt="Screenshot_20260501_224749" src="https://github.com/user-attachments/assets/f9ea63b1-664e-48f5-ad38-9d201548a1e3" />)
+
