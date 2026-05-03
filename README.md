@@ -29,6 +29,13 @@ Small design tweaks (moure rounded search bar, no blue underline, light gray bac
 Search for **Menu 11 Next** in *System Settings → Get New Widgets*.
 
 ## Method 2: install via source
+0. Download Github project - Code - download zip
+1. Right click Select Add Widgets... from desktop menu.
+2. Select Get New Widgets -> Install widget from local file
+3. Search for the downloaded zip
+
+OR from CLI
+
 ```bash
 # Clone the repository
 git clone https://github.com/Eisteed/menu-11-next.git
