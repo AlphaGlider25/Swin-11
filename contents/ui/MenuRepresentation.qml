@@ -573,6 +573,22 @@ PlasmaCore.Dialog {
                 searchResults: function(q) { return []; }
             });
 
+            // Web Search — injects "Search the web for X" into search results
+            PluginSystem.register({
+                name: "Web Search",
+                icon: "internet-web-browser",
+                commands: [],
+                handleQuery: function(q) { return null; },
+                searchResults: function(q) {
+                    if (!q || q.length < 2) return [];
+                    return [{
+                        icon: "internet-web-browser",
+                        title: i18n("Search the web for \"%1\"", q),
+                        subtitle: i18n("Opens default browser"),
+                        action: "xdg-open 'https://duckduckgo.com/?q=" + encodeURIComponent(q) + "'"
+                    }];
+                }
+            });
         }
 
         // Aggregated plugin search results — updated whenever the runner query changes
@@ -2058,15 +2074,114 @@ PlasmaCore.Dialog {
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.72
                 }
 
+                // ── Plugin search results (anchored at BOTTOM, not top) ──
+                Column {
+                    id: pluginResultsColumn
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Kirigami.Units.smallSpacing
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    spacing: 2
+                    z: 10
+                    visible: root.searching
+                             && !searchField.text.startsWith('/')
+                             && !searchField.text.startsWith('>')
+                             && rootItem.pluginResults.length > 0
+
+                    Repeater {
+                        model: rootItem.pluginResults
+
+                        delegate: Item {
+                            id: pluginResultItem
+                            width: pluginResultsColumn.width
+                            height: Kirigami.Units.gridUnit * 3
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                radius: Kirigami.Units.smallSpacing
+                                color: pluginResultHover.containsMouse
+                                       ? root.colorWithAlpha(Kirigami.Theme.highlightColor, 0.10)
+                                       : "transparent"
+                                border.width: 1
+                                border.color: root.colorWithAlpha(Kirigami.Theme.textColor, 0.07)
+                                Behavior on color { ColorAnimation { duration: 80 } }
+                            }
+
+                            Row {
+                                anchors.left: parent.left
+                                anchors.leftMargin: Kirigami.Units.smallSpacing * 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Kirigami.Units.smallSpacing
+
+                                Kirigami.Icon {
+                                    source: modelData.icon || "edit-find"
+                                    width: Kirigami.Units.iconSizes.smallMedium
+                                    height: width
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    animated: false
+                                }
+
+                                Column {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 1
+
+                                    Text {
+                                        text: modelData.title || ""
+                                        color: Kirigami.Theme.textColor
+                                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.95
+                                        elide: Text.ElideRight
+                                        width: pluginResultsColumn.width
+                                               - Kirigami.Units.iconSizes.smallMedium
+                                               - Kirigami.Units.smallSpacing * 4
+                                    }
+
+                                    Text {
+                                        visible: modelData.subtitle !== undefined && modelData.subtitle !== ""
+                                        text: modelData.subtitle || ""
+                                        color: root.colorWithAlpha(Kirigami.Theme.textColor, 0.55)
+                                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.78
+                                        elide: Text.ElideRight
+                                        width: pluginResultsColumn.width
+                                               - Kirigami.Units.iconSizes.smallMedium
+                                               - Kirigami.Units.smallSpacing * 4
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: pluginResultHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    var act = modelData.action;
+                                    if (typeof act === "function") act();
+                                    else if (typeof act === "string") executable.exec(act);
+                                    root.toggle();
+                                }
+                            }
+
+                            Keys.onReturnPressed: {
+                                var act = modelData.action;
+                                if (typeof act === "function") act();
+                                else if (typeof act === "string") executable.exec(act);
+                                root.toggle();
+                            }
+                        }
+                    }
+                }
 
                 // ── Results grid ──
                 ItemMultiGridView {
                     id: runnerGrid
                     anchors.top: filterPillsWrapper.bottom
+                    anchors.topMargin: Kirigami.Units.smallSpacing
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.topMargin: Kirigami.Units.smallSpacing
+                    // Constrain bottom to leave room for plugin results when visible
+                    anchors.bottom: pluginResultsColumn.visible ? pluginResultsColumn.top : parent.bottom
+                    anchors.bottomMargin: pluginResultsColumn.visible ? Kirigami.Units.smallSpacing : 0
                     visible: !(root.searching && searchField.text.startsWith('/'))
                     clip: true
                     itemColumns: 3
@@ -2156,6 +2271,7 @@ PlasmaCore.Dialog {
             repeat: false
             onTriggered: {
                 runnerModel.query = searchField.text;
+                rootItem.refreshPluginResults(searchField.text);
             }
         }
 
