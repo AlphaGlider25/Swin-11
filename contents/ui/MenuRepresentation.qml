@@ -2074,33 +2074,13 @@ PlasmaCore.Dialog {
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.72
                 }
 
-                // ── Results grid ──
-                ItemMultiGridView {
-                    id: runnerGrid
-                    anchors.top: filterPillsWrapper.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    visible: !(root.searching && searchField.text.startsWith('/'))
-                    itemColumns: 3
-                    cellWidth: rootItem.widthComputed - Kirigami.Units.gridUnit * 2
-                    cellHeight: root.iconSize + Kirigami.Units.gridUnit + Kirigami.Units.largeSpacing
-                    model: runnerModel
-                    grabFocus: true
-                    focus: view.currentIndex === 2
-                    onKeyNavUp: {
-                        runnerGrid.focus = false;
-                        searchField.focus = true;
-                    }
-                }
-
                 // ── Plugin search results ──
                 Column {
                     id: pluginResultsColumn
+                    anchors.top: filterPillsWrapper.bottom
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: Kirigami.Units.smallSpacing
+                    anchors.topMargin: Kirigami.Units.smallSpacing
                     spacing: 2
                     visible: root.searching
                              && !searchField.text.startsWith('/')
@@ -2188,6 +2168,27 @@ PlasmaCore.Dialog {
                                 root.toggle();
                             }
                         }
+                    }
+                }
+
+                // ── Results grid ──
+                ItemMultiGridView {
+                    id: runnerGrid
+                    anchors.top: pluginResultsColumn.visible ? pluginResultsColumn.bottom : filterPillsWrapper.bottom
+                    anchors.topMargin: pluginResultsColumn.visible ? Kirigami.Units.smallSpacing : 0
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    visible: !(root.searching && searchField.text.startsWith('/'))
+                    itemColumns: 3
+                    cellWidth: rootItem.widthComputed - Kirigami.Units.gridUnit * 2
+                    cellHeight: root.iconSize + Kirigami.Units.gridUnit + Kirigami.Units.largeSpacing
+                    model: runnerModel
+                    grabFocus: true
+                    focus: view.currentIndex === 2
+                    onKeyNavUp: {
+                        runnerGrid.focus = false;
+                        searchField.focus = true;
                     }
                 }
 
