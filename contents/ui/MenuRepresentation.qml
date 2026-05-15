@@ -675,7 +675,7 @@ PlasmaCore.Dialog {
                 rightMargin: Kirigami.Units.gridUnit
             }
             focus: true
-            placeholderText: i18n("Search  ·  > shell  ·  / commands")
+            placeholderText: i18n("Type here to search ...")
             topPadding: 10
             bottomPadding: 10
             leftPadding: Kirigami.Units.gridUnit + Kirigami.Units.iconSizes.small
