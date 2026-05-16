@@ -675,7 +675,7 @@ PlasmaCore.Dialog {
                 rightMargin: Kirigami.Units.gridUnit
             }
             focus: true
-            placeholderText: i18n("Search  ·  > shell  ·  / commands")
+            placeholderText: i18n("Type here to search ...")
             topPadding: 10
             bottomPadding: 10
             leftPadding: Kirigami.Units.gridUnit + Kirigami.Units.iconSizes.small
@@ -2074,34 +2074,15 @@ PlasmaCore.Dialog {
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.72
                 }
 
-                // ── Results grid ──
-                ItemMultiGridView {
-                    id: runnerGrid
-                    anchors.top: filterPillsWrapper.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    visible: !(root.searching && searchField.text.startsWith('/'))
-                    itemColumns: 3
-                    cellWidth: rootItem.widthComputed - Kirigami.Units.gridUnit * 2
-                    cellHeight: root.iconSize + Kirigami.Units.gridUnit + Kirigami.Units.largeSpacing
-                    model: runnerModel
-                    grabFocus: true
-                    focus: view.currentIndex === 2
-                    onKeyNavUp: {
-                        runnerGrid.focus = false;
-                        searchField.focus = true;
-                    }
-                }
-
-                // ── Plugin search results ──
+                // ── Plugin search results (anchored at BOTTOM, not top) ──
                 Column {
                     id: pluginResultsColumn
-                    anchors.left: parent.left
-                    anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Kirigami.Units.smallSpacing
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     spacing: 2
+                    z: 10
                     visible: root.searching
                              && !searchField.text.startsWith('/')
                              && !searchField.text.startsWith('>')
@@ -2188,6 +2169,30 @@ PlasmaCore.Dialog {
                                 root.toggle();
                             }
                         }
+                    }
+                }
+
+                // ── Results grid ──
+                ItemMultiGridView {
+                    id: runnerGrid
+                    anchors.top: filterPillsWrapper.bottom
+                    anchors.topMargin: Kirigami.Units.smallSpacing
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    // Constrain bottom to leave room for plugin results when visible
+                    anchors.bottom: pluginResultsColumn.visible ? pluginResultsColumn.top : parent.bottom
+                    anchors.bottomMargin: pluginResultsColumn.visible ? Kirigami.Units.smallSpacing : 0
+                    visible: !(root.searching && searchField.text.startsWith('/'))
+                    clip: true
+                    itemColumns: 3
+                    cellWidth: rootItem.widthComputed - Kirigami.Units.gridUnit * 2
+                    cellHeight: root.iconSize + Kirigami.Units.gridUnit + Kirigami.Units.largeSpacing
+                    model: runnerModel
+                    grabFocus: true
+                    focus: view.currentIndex === 2
+                    onKeyNavUp: {
+                        runnerGrid.focus = false;
+                        searchField.focus = true;
                     }
                 }
 

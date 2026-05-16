@@ -6,18 +6,29 @@ Small design tweaks (moure rounded search bar, no blue underline, light gray bac
 
 
 ## Features
-- Search bar auto select first result / press enter to start.
-- Custom menu position
-- Favorite / Pinned applications
-- Recent documents
-- View more recent document opens recentlyused:/files/
-- Shutdown / Restart / Sleep / Lock on bottom right
-- User profile / home folder / settings on bottom left
+- Search bar: auto-selects first result, supports `/` command mode, `/calc` math evaluation
+- Customizable layout: List, Grid, and Category view modes
+- Extensive sorting: A-Z, Z-A, Newest, Oldest, and Type
+- Organize apps: Folder support for All Apps page with drag-and-drop
+- Shortcuts:
+  - Ctrl + 1-9 to launch pinned apps
+  - Alt + 1-9 to launch search results
+  - Home / End navigation for grids
+  - Tab cycle for keyboard navigation
+- Workflow-aware: Adaptive suggestions based on time and frequency
+- Contextual Actions: Quick launch bar with common system utilities
+- Pinned/Favorite applications
+- Recent documents & files support
+- Shutdown / Restart / Sleep / Lock / Logout options
 
 ## Fixed
-- Arrows UP & DOWN navigation in search results
-- 0 width error on first start
-- shutdown / restart buttons
+- Alphabetical slider navigation in All Apps
+- Search result overlap and scrolling issues
+- Correct height calculation for multi-column grids
+- Focus ring and tab-cycle navigation
+- Plugin-based search provider stability
+- Folder management UI and drag-and-drop interactions
+- Corrected role mapping for Qt6 compatibility
 
 ## Installation
 

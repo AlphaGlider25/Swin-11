@@ -28,6 +28,7 @@ import org.kde.plasma.components as PC3
 import org.kde.plasma.private.kicker 0.1 as Kicker
 import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
+import org.kde.kitemmodels 1.0 as KItemModels
 
 PlasmoidItem {
 
@@ -160,6 +161,10 @@ PlasmoidItem {
          favoritesModel: globalFavorites
 
          runners: {
+             const blacklist = ["krunner_webshortcuts", "webshortcuts"];
+             function clean(list) {
+                 return list.filter(function(r) { return blacklist.indexOf(r) === -1; });
+             }
              if (kicker.searchRunnerFilter === "apps")
                  return ["krunner_services"];
              if (kicker.searchRunnerFilter === "files")
@@ -178,7 +183,7 @@ PlasmoidItem {
              if (Plasmoid.configuration.enableShellRunner)
                  results.push("krunner_shell");
              if (Plasmoid.configuration.useExtraRunners)
-                 results.push(...Plasmoid.configuration.extraRunners);
+                 results.push(...clean(Plasmoid.configuration.extraRunners));
              return results;
          }
      }
