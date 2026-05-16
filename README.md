@@ -76,5 +76,5 @@ kpackagetool6 --type Plasma/Applet --remove menu.11.next
 
 ## Screenshot
 ![Screenshot 1](https://github.com/user-attachments/assets/d23167b0-cc04-4cad-bf1d-3a11bca9a0c7)
-![Screenshot 2](https://github.com/user-attachments/assets/e92a5883-11f1-4dd7-977b-2217dcef973d)
-![Screenshot 2](https://github.com/user-attachments/assets/f9ea63b1-664e-48f5-ad38-9d201548a1e3)
+![Screenshot 2](https://github.com/user-attachments/assets/9e429f21-c2c2-4966-ab85-19a8cc17a0c6)
+![Screenshot 2](https://github.com/user-attachments/assets/a56b0514-2048-4072-ab2a-ad86c6cc25a3)
