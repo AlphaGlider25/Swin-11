@@ -28,12 +28,11 @@ Rectangle {
         anchors.margins: 8
         spacing: 12
 
-        PlasmaComponents.Icon {
+        Kirigami.Icon {
             id: weatherIconItem
             source: weatherCard.weatherIcon
             implicitWidth: 40
             implicitHeight: 40
-            colorGroup: PlasmaComponents.ColorScope.colorGroup
         }
 
         ColumnLayout {
