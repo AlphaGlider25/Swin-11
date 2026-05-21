@@ -89,34 +89,46 @@ Rectangle {
             return;
         }
 
+        var tmpFile = "/tmp/weather_" + Math.floor(Math.random() * 1000000) + ".json";
+        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude +
+                  "&longitude=" + longitude +
+                  "&current=temperature_2m,weather_code&timezone=auto";
+
         var process = Qt.createQmlObject(
             "import QtCore; Process { }",
             weatherCard
         );
 
-        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude +
-                  "&longitude=" + longitude +
-                  "&current=temperature_2m,weather_code&timezone=auto";
-
         process.program = "curl";
-        process.arguments = ["-s", url];
+        process.arguments = ["-s", "-o", tmpFile, url];
 
         process.finished.connect(function() {
-            var output = process.readAllStandardOutput().toString();
-            if (output) {
-                try {
-                    var response = JSON.parse(output);
-                    var data = response.current;
-                    weatherCache = data;
-                    lastUpdateTime = now;
-                    applyWeatherData(data);
-                } catch(e) {
-                    weatherCard.condition = "Parse error";
-                    console.error("Weather parsing error:", e);
+            var readProc = Qt.createQmlObject(
+                "import QtCore; Process { }",
+                weatherCard
+            );
+            readProc.program = "cat";
+            readProc.arguments = [tmpFile];
+
+            readProc.finished.connect(function() {
+                var output = readProc.readAllStandardOutput().toString();
+                if (output && output.length > 0) {
+                    try {
+                        var response = JSON.parse(output);
+                        weatherCache = response.current;
+                        lastUpdateTime = now;
+                        applyWeatherData(response.current);
+                    } catch(e) {
+                        weatherCard.condition = "Parse error";
+                        console.error("Weather parse error:", e, "output:", output.substring(0, 100));
+                    }
+                } else {
+                    weatherCard.condition = "No response";
                 }
-            } else {
-                weatherCard.condition = "Offline";
-            }
+                readProc.destroy();
+            });
+
+            readProc.start();
             process.destroy();
         });
 
@@ -129,6 +141,7 @@ Rectangle {
             process.start();
         } catch(e) {
             weatherCard.condition = "Error";
+            console.error("Weather fetch error:", e);
         }
     }
 
