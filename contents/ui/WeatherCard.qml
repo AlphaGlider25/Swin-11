@@ -5,13 +5,16 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
-PlasmaCore.ColorScope {
+Rectangle {
     id: weatherCard
 
-    colorGroup: PlasmaCore.ColorScope.Window
     visible: Plasmoid.configuration.showWeather
     height: visible ? 60 : 0
     width: parent.width
+    color: Kirigami.Theme.backgroundColor
+    radius: 4
+    border.color: Kirigami.Theme.textColor
+    border.width: 1
 
     property string temperature: "--°C"
     property string condition: "Unavailable"
@@ -20,40 +23,32 @@ PlasmaCore.ColorScope {
     property var lastUpdateTime: 0
     property int cacheValidityMs: 30 * 60 * 1000 // 30 minutes
 
-    Rectangle {
+    RowLayout {
         anchors.fill: parent
-        color: PlasmaCore.ColorScope.backgroundColor
-        radius: 4
-        border.color: PlasmaCore.ColorScope.textColor
-        border.width: 1
+        anchors.margins: 8
+        spacing: 12
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 8
-            spacing: 12
+        Kirigami.Icon {
+            id: weatherIconItem
+            source: weatherCard.weatherIcon
+            implicitWidth: 40
+            implicitHeight: 40
+        }
 
-            Kirigami.Icon {
-                id: weatherIconItem
-                source: weatherCard.weatherIcon
-                implicitWidth: 40
-                implicitHeight: 40
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            PlasmaComponents.Label {
+                text: weatherCard.temperature
+                font.pixelSize: 18
+                font.bold: true
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-
-                PlasmaComponents.Label {
-                    text: weatherCard.temperature
-                    font.pixelSize: 18
-                    font.bold: true
-                }
-
-                PlasmaComponents.Label {
-                    text: weatherCard.condition
-                    font.pixelSize: 12
-                    opacity: 0.7
-                }
+            PlasmaComponents.Label {
+                text: weatherCard.condition
+                font.pixelSize: 12
+                opacity: 0.7
             }
         }
     }
