@@ -19,10 +19,12 @@ Rectangle {
 
     property string temperature: "--°C"
     property string condition: "Unavailable"
-    property string weatherIcon: "weather-clear"
+    property string weatherIcon: "weather-clouds"
     property var weatherCache: null
     property var lastUpdateTime: 0
     property int cacheValidityMs: 30 * 60 * 1000 // 30 minutes
+    property double latitude: 48.8566
+    property double longitude: 2.3522
 
     RowLayout {
         anchors.fill: parent
@@ -54,82 +56,89 @@ Rectangle {
         }
     }
 
+    function getWeatherIcon(code) {
+        if (code === 0) return "weather-clear";
+        if (code === 1 || code === 2) return "weather-few-clouds";
+        if (code === 3) return "weather-overcast";
+        if (code === 45 || code === 48) return "weather-fog";
+        if (code >= 51 && code <= 67) return "weather-rain";
+        if (code >= 71 && code <= 86) return "weather-snow";
+        if (code >= 80 && code <= 82) return "weather-rain";
+        if (code >= 90 && code <= 99) return "weather-thunderstorm";
+        return "weather-clouds";
+    }
+
+    function getWeatherDescription(code) {
+        if (code === 0) return "Clear";
+        if (code === 1) return "Mostly Clear";
+        if (code === 2) return "Partly Cloudy";
+        if (code === 3) return "Overcast";
+        if (code === 45) return "Foggy";
+        if (code >= 51 && code <= 67) return "Rain";
+        if (code >= 71 && code <= 86) return "Snow";
+        if (code >= 80 && code <= 82) return "Rainy";
+        if (code >= 90 && code <= 99) return "Thunderstorm";
+        return "Unknown";
+    }
+
     function updateWeather() {
         var now = Date.now();
 
-        // Check cache validity
         if (weatherCache !== null && (now - lastUpdateTime) < cacheValidityMs) {
             applyWeatherData(weatherCache);
             return;
         }
 
-        // Query KDE weather daemon via D-Bus
         var process = Qt.createQmlObject(
             "import QtCore; Process { }",
             weatherCard
         );
 
-        // Use qdbus to query weather service
-        process.program = "qdbus";
-        process.arguments = [
-            "org.kde.weather",
-            "/weather",
-            "org.kde.weather.WeatherProvider.currentWeather"
-        ];
+        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude +
+                  "&longitude=" + longitude +
+                  "&current=temperature_2m,weather_code&timezone=auto";
+
+        process.program = "curl";
+        process.arguments = ["-s", url];
 
         process.finished.connect(function() {
             var output = process.readAllStandardOutput().toString();
-            var error = process.readAllStandardError().toString();
-
-            if (error || !output) {
-                weatherCard.condition = "Weather unavailable — configure in System Settings";
-                weatherCard.temperature = "";
-                weatherCard.weatherIcon = "dialog-warning";
-                process.destroy();
-                return;
-            }
-
-            try {
-                var data = JSON.parse(output);
-                weatherCache = data;
-                lastUpdateTime = now;
-                applyWeatherData(data);
-            } catch(e) {
-                weatherCard.condition = "Error parsing weather data";
-                weatherCard.temperature = "";
-                weatherCard.weatherIcon = "dialog-error";
-                console.error("Weather parsing error:", e);
+            if (output) {
+                try {
+                    var response = JSON.parse(output);
+                    var data = response.current;
+                    weatherCache = data;
+                    lastUpdateTime = now;
+                    applyWeatherData(data);
+                } catch(e) {
+                    weatherCard.condition = "Parse error";
+                    console.error("Weather parsing error:", e);
+                }
+            } else {
+                weatherCard.condition = "Offline";
             }
             process.destroy();
         });
 
         process.errorOccurred.connect(function() {
-            weatherCard.condition = "Weather service unavailable";
-            weatherCard.temperature = "";
-            weatherCard.weatherIcon = "dialog-warning";
-            console.warn("D-Bus query failed:", process.errorString());
+            weatherCard.condition = "Network error";
             process.destroy();
         });
 
         try {
             process.start();
         } catch(e) {
-            weatherCard.condition = "Cannot connect to weather service";
-            weatherCard.temperature = "";
-            weatherCard.weatherIcon = "dialog-error";
-            console.error("Process start error:", e);
+            weatherCard.condition = "Error";
         }
     }
 
     function applyWeatherData(data) {
-        if (data.temperature !== undefined) {
-            weatherCard.temperature = Math.round(data.temperature) + "°C";
+        if (data.temperature_2m !== undefined) {
+            weatherCard.temperature = Math.round(data.temperature_2m) + "°C";
         }
-        if (data.condition !== undefined) {
-            weatherCard.condition = data.condition;
-        }
-        if (data.icon !== undefined) {
-            weatherCard.weatherIcon = data.icon;
+        if (data.weather_code !== undefined) {
+            weatherCard.condition = getWeatherDescription(data.weather_code);
+            weatherCard.weatherIcon = getWeatherIcon(data.weather_code);
         }
     }
 
