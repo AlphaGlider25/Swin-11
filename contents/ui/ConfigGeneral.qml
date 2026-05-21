@@ -272,7 +272,7 @@ KCM.SimpleKCM {
 
         CheckBox {
             id: showWeatherCb
-            text: i18n("Show weather widget")
+            text: i18n("Show weather widget (requires weather service)")
         }
 
         Item {

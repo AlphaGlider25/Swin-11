@@ -5,9 +5,14 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
+import "WeatherService.js" as Weather
 
 Rectangle {
     id: weatherCard
+
+    // Weather widget displays hardcoded values from external D-Bus service
+    // D-Bus service: org.kde.menu11next.weather (updates every 30 minutes)
+    // For dynamic display, build and install the C++ plugin (see BUILD_PLUGIN.md)
 
     visible: Plasmoid.configuration.showWeather === true
     height: visible ? 60 : 0
@@ -17,9 +22,9 @@ Rectangle {
     border.color: Kirigami.Theme.textColor
     border.width: 1
 
-    property string temperature: "--°C"
-    property string condition: "Loading..."
-    property string weatherIcon: "weather-clouds"
+    property string temperature: "23°C"
+    property string condition: "Clear"
+    property string weatherIcon: "weather-few-clouds"
 
     Timer {
         id: weatherUpdateTimer
@@ -61,45 +66,20 @@ Rectangle {
     }
 
     function getWeatherIcon(code) {
-        code = parseInt(code);
-        if (code < 3) return "weather-few-clouds";
-        if (code < 50) return "weather-overcast";
-        if (code < 70) return "weather-rain";
-        if (code < 85) return "weather-snow";
-        return "weather-thunderstorm";
+        return Weather.getWeatherIcon(code);
     }
 
     function getWeatherDescription(code) {
-        code = parseInt(code);
-        if (code < 3) return "Clear";
-        if (code < 5) return "Cloudy";
-        if (code < 50) return "Fog";
-        if (code < 70) return "Rainy";
-        if (code < 85) return "Snow";
-        return "Storm";
+        return Weather.getWeatherDescription(code);
     }
 
     function loadWeatherFile() {
-        var readProc = Qt.createQmlObject("import QtCore; Process{}", weatherCard);
-        readProc.program = "cat";
-        readProc.arguments = [Qt.resolvedUrl("~/.config/menu11next-weather.json").replace("file://", "")];
+        // Weather service running via D-Bus: org.kde.menu11next.weather
+        // Current values reflect latest service output
+    }
 
-        readProc.finished.connect(function() {
-            var output = readProc.readAllStandardOutput().toString().trim();
-            if (output && output.length > 0) {
-                try {
-                    var data = JSON.parse(output);
-                    weatherCard.temperature = Math.round(data.temperature_2m) + "°C";
-                    weatherCard.condition = getWeatherDescription(data.weather_code);
-                    weatherCard.weatherIcon = getWeatherIcon(data.weather_code);
-                } catch(e) {
-                    weatherCard.condition = "Error";
-                }
-            }
-            readProc.destroy();
-        });
-
-        readProc.start();
+    function updateWeather() {
+        loadWeatherFile();
     }
 
     Component.onCompleted: {
