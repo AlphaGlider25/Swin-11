@@ -22,9 +22,7 @@ Rectangle {
     property string weatherIcon: "weather-clouds"
     property var weatherCache: null
     property var lastUpdateTime: 0
-    property int cacheValidityMs: 30 * 60 * 1000 // 30 minutes
-    property double latitude: 48.8566
-    property double longitude: 2.3522
+    property int cacheValidityMs: 30 * 60 * 1000
 
     RowLayout {
         anchors.fill: parent
@@ -57,101 +55,77 @@ Rectangle {
     }
 
     function getWeatherIcon(code) {
+        code = parseInt(code);
         if (code === 0) return "weather-clear";
-        if (code === 1 || code === 2) return "weather-few-clouds";
+        if (code <= 2) return "weather-few-clouds";
         if (code === 3) return "weather-overcast";
         if (code === 45 || code === 48) return "weather-fog";
-        if (code >= 51 && code <= 67) return "weather-rain";
-        if (code >= 71 && code <= 86) return "weather-snow";
-        if (code >= 80 && code <= 82) return "weather-rain";
-        if (code >= 90 && code <= 99) return "weather-thunderstorm";
-        return "weather-clouds";
+        if (code < 70) return "weather-rain";
+        if (code < 80) return "weather-snow";
+        if (code < 85) return "weather-rain";
+        if (code < 90) return "weather-snow";
+        return "weather-thunderstorm";
     }
 
     function getWeatherDescription(code) {
+        code = parseInt(code);
         if (code === 0) return "Clear";
-        if (code === 1) return "Mostly Clear";
-        if (code === 2) return "Partly Cloudy";
+        if (code === 1) return "Clear";
+        if (code === 2) return "Cloudy";
         if (code === 3) return "Overcast";
-        if (code === 45) return "Foggy";
-        if (code >= 51 && code <= 67) return "Rain";
-        if (code >= 71 && code <= 86) return "Snow";
-        if (code >= 80 && code <= 82) return "Rainy";
-        if (code >= 90 && code <= 99) return "Thunderstorm";
-        return "Unknown";
+        if (code < 50) return "Fog";
+        if (code < 70) return "Rain";
+        if (code < 80) return "Snow";
+        if (code < 85) return "Rain";
+        if (code < 90) return "Snow";
+        return "Thunderstorm";
     }
 
     function updateWeather() {
-        var now = Date.now();
+        var now = Math.floor(Date.now() / 1000);
 
-        if (weatherCache !== null && (now - lastUpdateTime) < cacheValidityMs) {
+        if (weatherCache && lastUpdateTime && (now - lastUpdateTime) < 1800) {
             applyWeatherData(weatherCache);
             return;
         }
 
-        var tmpFile = "/tmp/weather_" + Math.floor(Math.random() * 1000000) + ".json";
-        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude +
-                  "&longitude=" + longitude +
-                  "&current=temperature_2m,weather_code&timezone=auto";
+        var proc = Qt.createQmlObject("import QtCore; Process{}", weatherCard);
 
-        var process = Qt.createQmlObject(
-            "import QtCore; Process { }",
-            weatherCard
-        );
-
-        process.program = "curl";
-        process.arguments = ["-s", "-o", tmpFile, url];
-
-        process.finished.connect(function() {
-            var readProc = Qt.createQmlObject(
-                "import QtCore; Process { }",
-                weatherCard
-            );
-            readProc.program = "cat";
-            readProc.arguments = [tmpFile];
-
-            readProc.finished.connect(function() {
-                var output = readProc.readAllStandardOutput().toString();
-                if (output && output.length > 0) {
-                    try {
-                        var response = JSON.parse(output);
-                        weatherCache = response.current;
-                        lastUpdateTime = now;
-                        applyWeatherData(response.current);
-                    } catch(e) {
-                        weatherCard.condition = "Parse error";
-                        console.error("Weather parse error:", e, "output:", output.substring(0, 100));
-                    }
-                } else {
-                    weatherCard.condition = "No response";
+        proc.finished.connect(function() {
+            var json = proc.readAllStandardOutput().toString().trim();
+            if (json.length > 0) {
+                try {
+                    var obj = JSON.parse(json);
+                    weatherCache = obj;
+                    lastUpdateTime = now;
+                    applyWeatherData(obj);
+                } catch(e) {
+                    weatherCard.condition = "Error";
                 }
-                readProc.destroy();
-            });
-
-            readProc.start();
-            process.destroy();
+            }
+            proc.destroy();
         });
 
-        process.errorOccurred.connect(function() {
-            weatherCard.condition = "Network error";
-            process.destroy();
-        });
+        proc.program = "/bin/bash";
+        proc.arguments = ["-c",
+            "curl -s 'https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,weather_code' | " +
+            "jq -r '.current | {temperature: .temperature_2m, code: .weather_code}' | jq -c ."
+        ];
 
         try {
-            process.start();
+            proc.start();
         } catch(e) {
-            weatherCard.condition = "Error";
-            console.error("Weather fetch error:", e);
+            weatherCard.condition = "Failed";
         }
     }
 
     function applyWeatherData(data) {
-        if (data.temperature_2m !== undefined) {
-            weatherCard.temperature = Math.round(data.temperature_2m) + "°C";
+        if (data.temperature !== undefined) {
+            weatherCard.temperature = Math.round(data.temperature) + "°C";
         }
-        if (data.weather_code !== undefined) {
-            weatherCard.condition = getWeatherDescription(data.weather_code);
-            weatherCard.weatherIcon = getWeatherIcon(data.weather_code);
+        if (data.code !== undefined) {
+            weatherCard.condition = getWeatherDescription(data.code);
+            weatherCard.weatherIcon = getWeatherIcon(data.code);
         }
     }
 
