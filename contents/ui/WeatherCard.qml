@@ -5,16 +5,13 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
-Rectangle {
+PlasmaCore.ColorScope {
     id: weatherCard
 
+    colorGroup: PlasmaCore.ColorScope.Window
     visible: Plasmoid.configuration.showWeather
     height: visible ? 60 : 0
     width: parent.width
-    color: PlasmaCore.ColorScope.backgroundColor
-    radius: 4
-    border.color: PlasmaCore.ColorScope.textColor
-    border.width: 1
 
     property string temperature: "--°C"
     property string condition: "Unavailable"
@@ -23,32 +20,40 @@ Rectangle {
     property var lastUpdateTime: 0
     property int cacheValidityMs: 30 * 60 * 1000 // 30 minutes
 
-    RowLayout {
+    Rectangle {
         anchors.fill: parent
-        anchors.margins: 8
-        spacing: 12
+        color: PlasmaCore.ColorScope.backgroundColor
+        radius: 4
+        border.color: PlasmaCore.ColorScope.textColor
+        border.width: 1
 
-        Kirigami.Icon {
-            id: weatherIconItem
-            source: weatherCard.weatherIcon
-            implicitWidth: 40
-            implicitHeight: 40
-        }
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 12
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 2
-
-            PlasmaComponents.Label {
-                text: weatherCard.temperature
-                font.pixelSize: 18
-                font.bold: true
+            Kirigami.Icon {
+                id: weatherIconItem
+                source: weatherCard.weatherIcon
+                implicitWidth: 40
+                implicitHeight: 40
             }
 
-            PlasmaComponents.Label {
-                text: weatherCard.condition
-                font.pixelSize: 12
-                opacity: 0.7
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                PlasmaComponents.Label {
+                    text: weatherCard.temperature
+                    font.pixelSize: 18
+                    font.bold: true
+                }
+
+                PlasmaComponents.Label {
+                    text: weatherCard.condition
+                    font.pixelSize: 12
+                    opacity: 0.7
+                }
             }
         }
     }
@@ -134,5 +139,8 @@ Rectangle {
 
     Component.onCompleted: {
         updateWeather();
+        Plasmoid.configuration.showWeatherChanged.connect(function() {
+            weatherCard.visible = Plasmoid.configuration.showWeather;
+        });
     }
 }
