@@ -10,10 +10,6 @@ import "WeatherService.js" as Weather
 Rectangle {
     id: weatherCard
 
-    // Weather widget displays hardcoded values from external D-Bus service
-    // D-Bus service: org.kde.menu11next.weather (updates every 30 minutes)
-    // For dynamic display, build and install the C++ plugin (see BUILD_PLUGIN.md)
-
     visible: Plasmoid.configuration.showWeather === true
     height: visible ? 60 : 0
     width: parent.width
@@ -22,19 +18,20 @@ Rectangle {
     border.color: Kirigami.Theme.textColor
     border.width: 1
 
-    property string temperature: "23°C"
-    property string condition: "Clear"
-    property string weatherIcon: "weather-few-clouds"
+    property string temperature: "Loading..."
+    property string condition: "Loading..."
+    property string weatherIcon: "weather-clouds"
 
     Timer {
         id: weatherUpdateTimer
-        interval: 30000
+        interval: 600000
         running: true
         repeat: true
         onTriggered: {
-            weatherCard.loadWeatherFile();
+            weatherCard.fetchWeatherFromAPI();
         }
     }
+
 
     RowLayout {
         anchors.fill: parent
@@ -73,17 +70,50 @@ Rectangle {
         return Weather.getWeatherDescription(code);
     }
 
-    function loadWeatherFile() {
-        // Weather service running via D-Bus: org.kde.menu11next.weather
-        // Current values reflect latest service output
-    }
 
-    function updateWeather() {
-        loadWeatherFile();
+    function fetchWeatherFromAPI() {
+        var xhr = new XMLHttpRequest();
+        var lat = Plasmoid.configuration.weatherLatitude || 48.8566;
+        var lon = Plasmoid.configuration.weatherLongitude || 2.3522;
+        var apiUrl = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=temperature_2m,weather_code&timezone=auto";
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        var current = data.current;
+
+                        weatherCard.temperature = Math.round(current.temperature_2m) + "°C";
+                        weatherCard.condition = weatherCard.getWeatherDescription(current.weather_code);
+                        weatherCard.weatherIcon = weatherCard.getWeatherIcon(current.weather_code);
+
+                        console.log("[Weather] Updated: " + weatherCard.temperature + ", " + weatherCard.condition);
+                    } catch (e) {
+                        console.error("[Weather] JSON parse error: " + e);
+                        weatherCard.temperature = "Error";
+                        weatherCard.condition = "Parse failed";
+                    }
+                } else {
+                    console.error("[Weather] API request failed with status: " + xhr.status);
+                    weatherCard.temperature = "Error";
+                    weatherCard.condition = "Network error";
+                }
+            }
+        };
+
+        xhr.onerror = function() {
+            console.error("[Weather] Network error");
+            weatherCard.temperature = "Error";
+            weatherCard.condition = "Network error";
+        };
+
+        xhr.open("GET", apiUrl, true);
+        xhr.send();
     }
 
     Component.onCompleted: {
-        loadWeatherFile();
+        fetchWeatherFromAPI();
     }
 
 }
