@@ -139,8 +139,11 @@ PlasmaCore.ColorScope {
 
     Component.onCompleted: {
         updateWeather();
-        Plasmoid.configuration.showWeatherChanged.connect(function() {
-            weatherCard.visible = Plasmoid.configuration.showWeather;
-        });
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            updateWeather();
+        }
     }
 }
