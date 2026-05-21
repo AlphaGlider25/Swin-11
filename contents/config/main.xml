@@ -130,6 +130,16 @@
       <default>false</default>
     </entry>
 
+    <entry name="showWeather" type="Bool">
+      <default>false</default>
+      <label>Show weather widget on home page</label>
+    </entry>
+
+    <entry name="lastUpdateCheckTime" type="Int">
+      <default>0</default>
+      <label>Timestamp of last update check</label>
+    </entry>
+
     <entry name="appLaunchCounts" type="String">
       <default></default>
     </entry>

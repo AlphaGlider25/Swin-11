@@ -38,6 +38,7 @@ import org.kde.kirigami 2.20 as Kirigami
 import org.kde.ksvg 1.0 as KSvg
 import org.kde.plasma.plasmoid 2.0
 import org.kde.kcmutils as KCM
+import "code/UpdateChecker.js" as UpdateChecker
 
 
 
@@ -65,6 +66,7 @@ KCM.SimpleKCM {
     property alias cfg_showSleepButton: showSleepCb.checked
     property alias cfg_showRestartButton: showRestartCb.checked
     property alias cfg_showShutdownButton: showShutdownCb.checked
+    property alias cfg_showWeather: showWeatherCb.checked
 
     Kirigami.FormLayout {
         anchors.left: parent.left
@@ -268,6 +270,11 @@ KCM.SimpleKCM {
             text: i18n("Show Quick Actions bar (Screenshot, Lock, Terminal…)")
         }
 
+        CheckBox {
+            id: showWeatherCb
+            text: i18n("Show weather widget")
+        }
+
         Item {
             Kirigami.FormData.isSection: true
             Kirigami.FormData.label: i18n("Footer power buttons")
@@ -304,5 +311,45 @@ KCM.SimpleKCM {
             }
         }
 
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("About")
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+
+            Text {
+                text: i18n("Version: 1.3")
+                Layout.fillWidth: true
+            }
+
+            Button {
+                id: checkUpdatesBtn
+                text: checkUpdatesBtn.checking ? i18n("Checking...") : i18n("Check for Updates")
+                property bool checking: false
+
+                onClicked: {
+                    checkUpdatesBtn.checking = true;
+                    UpdateChecker.checkForUpdates("1.3", function(result) {
+                        checkUpdatesBtn.checking = false;
+
+                        var status = UpdateChecker.formatUpdateStatus(result, "1.3");
+                        showUpdateDialog(status.title, status.subtitle, result.releaseUrl);
+                    });
+                }
+            }
+        }
+
+    }
+
+    function showUpdateDialog(title, subtitle, url) {
+        // Create and show a message dialog
+        var message = title + "\n" + subtitle;
+        if (url) {
+            message += "\n\n" + i18n("Click OK to open release page");
+            var result = Qt.openUrlExternally(url);
+        }
+        console.log(message);
     }
 }
