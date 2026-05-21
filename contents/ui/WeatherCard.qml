@@ -3,12 +3,13 @@ import QtCore
 import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
 
 Rectangle {
     id: weatherCard
 
-    visible: Plasmoid.configuration.showWeather
+    visible: Plasmoid.configuration.showWeather === true
     height: visible ? 60 : 0
     width: parent.width
     color: Kirigami.Theme.backgroundColor
