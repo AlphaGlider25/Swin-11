@@ -17,10 +17,19 @@ Rectangle {
     border.color: Kirigami.Theme.textColor
     border.width: 1
 
-    property string temperature: "23°C"
-    property string condition: "Partly Cloudy"
-    property string weatherIcon: "weather-few-clouds"
+    property string temperature: "--°C"
+    property string condition: "Loading..."
+    property string weatherIcon: "weather-clouds"
 
+    Timer {
+        id: weatherUpdateTimer
+        interval: 30000
+        running: true
+        repeat: true
+        onTriggered: {
+            weatherCard.loadWeatherFile();
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -68,6 +77,33 @@ Rectangle {
         if (code < 70) return "Rainy";
         if (code < 85) return "Snow";
         return "Storm";
+    }
+
+    function loadWeatherFile() {
+        var readProc = Qt.createQmlObject("import QtCore; Process{}", weatherCard);
+        readProc.program = "cat";
+        readProc.arguments = [Qt.resolvedUrl("~/.config/menu11next-weather.json").replace("file://", "")];
+
+        readProc.finished.connect(function() {
+            var output = readProc.readAllStandardOutput().toString().trim();
+            if (output && output.length > 0) {
+                try {
+                    var data = JSON.parse(output);
+                    weatherCard.temperature = Math.round(data.temperature_2m) + "°C";
+                    weatherCard.condition = getWeatherDescription(data.weather_code);
+                    weatherCard.weatherIcon = getWeatherIcon(data.weather_code);
+                } catch(e) {
+                    weatherCard.condition = "Error";
+                }
+            }
+            readProc.destroy();
+        });
+
+        readProc.start();
+    }
+
+    Component.onCompleted: {
+        loadWeatherFile();
     }
 
 }
